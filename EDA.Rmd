@@ -1,0 +1,61 @@
+---
+title: "1/15 EDA"
+author: "pipi"
+date: "1/15/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readr)
+NIS_2016_Core <- read_csv("~/datathon/NIS_2016_Core.csv")
+
+```
+
+Source: https://www.icd10data.com/ICD10CM/Codes/O00-O9A/O60-O77/O72-/O72.1
+ICD-10-CM O72.1 is grouped within Diagnostic Related Group(s) (MS-DRG v39.0):
+769 Postpartum and post abortion diagnoses with o.r. Procedures
+776 Postpartum and post abortion diagnoses without o.r. Procedures
+
+```{r}
+ph_2016 <- NIS_2016_Core %>% 
+           filter(drg == 769 | drg == 776) %>%
+           mutate(drg_char = as.character(drg))
+
+ggplot(ph_2016, aes(x = drg_char)) + geom_bar()
+```
+# distribution of age
+```{r}
+ggplot(ph_2016, aes(x = age)) + geom_bar(width = 0.7) + facet_wrap(~ drg_char)
+ggplot(ph_2016, aes(x = age, fill = drg_char)) + geom_bar()
+      
+```
+# race 
+```{r}
+race_table <- data.frame (race = c(1,2,3,4,5,6),
+                  race_description = c("White", "Black", "Hispanic", "Asian or Pacific Islander", "Native American", "Other") )
+ph_2016 <- left_join(ph_2016, race_table, by = "race" )
+
+race_count <- ph_2016 %>% group_by(race_description) %>% summarise(count = n())
+View(race_count)
+
+ph_2016 %>% filter(!is.na(race)) %>% 
+            ggplot()+ aes(x = race_description, fill = drg_char) +
+            geom_bar(width = 0.5, position = "dodge")
+```
+
+```{r}
+NIS_2016_Severity <- read_csv("~/datathon/NIS_2016_Severity.csv")
+ph_severity_2016 <- NIS_2016_Severity %>% filter(aprdrg == 769 | aprdrg == 776) # difference between aprdrg and drg in the core file?
+```
+
+### Fig.3 Risk of severe morbidity including transfusion by comorbidity index score
+```{r}
+# ? key_nis doesn't match at all?
+complete_2016 <- left_join(NIS_2016_Core, NIS_2016_Severity, by = "key_nis") 
+
+```
