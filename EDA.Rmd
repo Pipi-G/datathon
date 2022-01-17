@@ -57,5 +57,16 @@ ph_severity_2016 <- NIS_2016_Severity %>% filter(aprdrg == 769 | aprdrg == 776) 
 ```{r}
 # ? key_nis doesn't match at all?
 complete_2016 <- left_join(NIS_2016_Core, NIS_2016_Severity, by = "key_nis") 
+```
+
+
+
+### 1/16 goals: filter PPH: O72 out， find transfusion
+
+```{r}
+#All patients that has O72x in their diagnosis
+icd <- sprintf("i10_dx%d",seq(1:30))
+PPH_2016 <- ph_2016 %>% filter_at(icd, any_vars(.%in% c("O720","O721", "O722", "O723")))
+
 
 ```
