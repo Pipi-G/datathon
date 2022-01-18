@@ -10,25 +10,65 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(readr)
-NIS_2018_Core <- read_csv("~/datathon/NIS_2018_Core.csv")
-NIS_2018_Severity <- read_csv("~/datathon/NIS_2018_Severity.csv")
+NIS_2018_Core <- read_csv("~/datathon/NIS_2018_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2018_Severity <- read_csv("~/datathon/NIS_2018_Severity.csv") %>%
+  mutate(key = round(key_nis))
 
-icd_2018 <- sprintf("i10_dx%d",seq(1:40))
-PPH_Core_2018 <- NIS_2018_Core %>% filter_at(icd_2018, any_vars(.%in% c("O720","O721", "O722", "O723")))
-trial_core_2018 <- NIS_2018_Core%>% head(10)
-trial_severity_2018 <- NIS_2018_Severity %>% head(20)
+```
+
+### DO NOT RUN THE CHUNK BELOW 
+
+In the chunk below, I found out that although Core and Severity files in 2018 has the same number of rows (n = 7105498), Severity has 181515 repeated rows. There's problem with the datasets.
+
+```{r}
+# do all keys in Core match keys in Severity?
+setdiff(NIS_2018_Severity$key, NIS_2018_Core$key) #returns 0
+setdiff(NIS_2018_Core$key, NIS_2018_Severity$key) #returns 181515 keys that are in Core but not Severity
+
+#pick a key returned from the above line: 51245142
+a <- NIS_2018_Core %>% filter(key == 51245142) #1 observation
+b <- NIS_2018_Severity %>% filter(key == 51245142)#0 observation
+#oops then the keys in Core and Severity don't exactly match, severity might have repeated rows 
+
+#see if severity has repeated keys
+c <- NIS_2018_Severity %>% group_by(key) %>% summarize(count = n()) #has 6923983 rows(aka distinct keys), but Severity has 7105498 rows, 181515 rows are missing
+c %>% filter(count == 2) #there are 181515 keys that showed up twice
+
+#for example, 51149147 is counted twice, let's look it up in Core and Severity
+bug_Severity <- NIS_2018_Severity %>% filter(key == 51149147)
+View(bug_Severity)
+#it turns out 51149148 is transformed to 51149148
+e <- NIS_2018_Severity %>% filter(key_nis == 51149147)
+e_2 <- NIS_2018_Severity %>% filter(key == 51149147)
+e_2 %>% mutate(num_key = as.numeric(key_nis))
 ```
 
 ```{r}
-#left_join
-left_join(trial_core_2018, trial_severity_2018, by = "key_nis")
+#filter out all obs that has O72 in dianosis
+icd_2018 <- sprintf("i10_dx%d",seq(1:40))
+PPH_Core_2018 <- NIS_2018_Core %>% 
+  filter_at(icd_2018, any_vars(.%in% c("O720","O721", "O722", "O723")))
+count(PPH_Core_2018) #30204 patients diagonsed with PPH in 2018
 
-trial_core_2018_int <- trial_core_2018 %>% 
-  mutate(key = as.integer(as.character(key_nis)))
+PPH_2018 <- left_join(PPH_Core_2018, NIS_2018_Severity, by = "key")
+
+
+
+```
+
+### ignore the chunk below:
+```{r}
+#left_join
+trial_core_2018 <- NIS_2018_Core %>% head(10)
+trial_severity_2018 <- NIS_2018_Severity %>% head(20) %>% mutate(key = as.integer(as.character(key_nis)))
+
+inner_join(trial_core_2018, trial_severity_2018, by = c("key_nis" = "key"))
+
+trial_core_2018_int <- trial_core_2018
 
 trial_severity_2018_int <- trial_severity_2018 %>% 
-  mutate(key = as.integer(as.character(key_nis)))
+  mutate(key = as.integer(key_nis))
 
-left_join(trial_core_2018_int, trial_severity_2018_int, by = "key")
-
+trial_complete_2018 <- left_join(trial_core_2018_int, trial_severity_2018_int, by = "key") 
 ```
