@@ -18,9 +18,6 @@ NIS_2018_Severity <- read_csv("~/datathon/NIS_2018_Severity.csv") %>%
 ```
 
 ### DO NOT RUN THE CHUNK BELOW 
-
-In the chunk below, I found out that although Core and Severity files in 2018 has the same number of rows (n = 7105498), Severity has 181515 repeated rows. There's problem with the datasets.
-
 ```{r}
 # do all keys in Core match keys in Severity?
 setdiff(NIS_2018_Severity$key, NIS_2018_Core$key) #returns 0
@@ -46,13 +43,67 @@ e_2 %>% mutate(num_key = as.numeric(key_nis))
 
 ```{r}
 #filter out all obs that has O72 in dianosis
-icd_2018 <- sprintf("i10_dx%d",seq(1:40))
+icd_2018 <- sprintf("i10_dx%d",seq(1:40)) #2018 has 10_dx1-40
 PPH_Core_2018 <- NIS_2018_Core %>% 
   filter_at(icd_2018, any_vars(.%in% c("O720","O721", "O722", "O723")))
 count(PPH_Core_2018) #30204 patients diagonsed with PPH in 2018
 
-PPH_2018 <- left_join(PPH_Core_2018, NIS_2018_Severity, by = "key")
+PPH_2018 <- left_join(PPH_Core_2018, NIS_2018_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
 
+```
+
+```{r}
+#same for 2017
+icd_2017 <- sprintf("i10_dx%d",seq(1:40)) 
+NIS_2017_Core <- read_csv("~/datathon/NIS_2017_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2017_Severity <- read_csv("~/datathon/NIS_2017_Severity.csv") %>%
+  mutate(key = round(key_nis))
+PPH_Core_2017 <- NIS_2017_Core %>% 
+  filter_at(icd_2017, any_vars(.%in% c("O720","O721", "O722", "O723")))
+count(PPH_Core_2017) #28375 patients diagonsed with PPH in 2017
+
+PPH_2017 <- left_join(PPH_Core_2017, NIS_2017_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y","dxver","prver")) #the dxver and prver in 2017 are all 10,no these two columns in years after
+
+colnames(PPH_2017) == colnames(PPH_2018) #quick check - now PPH2017 and 2018 have same columns
+
+#same process for 2019
+icd_2019 <- sprintf("i10_dx%d",seq(1:40)) 
+NIS_2019_Core <- read_csv("~/datathon/NIS_2019_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2019_Severity <- read_csv("~/datathon/NIS_2019_Severity.csv") %>%
+  mutate(key = round(key_nis))
+PPH_Core_2019 <- NIS_2019_Core %>% 
+  filter_at(icd_2019, any_vars(.%in% c("O720","O721", "O722", "O723")))
+count(PPH_Core_2019) #32416 patients diagonsed with PPH in 2019
+
+PPH_2019 <- left_join(PPH_Core_2019, NIS_2019_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
+setdiff(colnames(PPH_2019),colnames(PPH_2018))
+# 6 new variables in 2019 "i10_birth", "i10_delivery", "i10_injury"     "i10_multinjury" , "i10_serviceline" ,"pclass_orproc", drop them for now
+PPH_2019 <- PPH_2019 %>% select(-c("i10_birth", "i10_delivery", "i10_injury",    "i10_multinjury" , "i10_serviceline" ,"pclass_orproc"))
+
+#same for 2016, only that 2016 has fewer i10_dx and i10_pr and prday
+icd_2016 <- sprintf("i10_dx%d",seq(1:30)) 
+NIS_2016_Core <- read_csv("~/datathon/NIS_2016_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2017_Severity <- read_csv("~/datathon/NIS_2016_Severity.csv") %>%
+  mutate(key = round(key_nis))
+PPH_Core_2016 <- NIS_2016_Core %>% 
+  filter_at(icd_2016, any_vars(.%in% c("O720","O721", "O722", "O723")))
+count(PPH_Core_2016) #25688 patients diagonsed with PPH in 2017
+
+PPH_2016 <- left_join(PPH_Core_2016, NIS_2017_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
+setdiff(colnames(PPH_2019),colnames(PPH_2016))
+# need to add 3*10 columns with the following names(all values set to NA) #"i10_dx31","i10_dx32","i10_dx33","i10_dx34", "i10_dx35","i10_dx36","i10_dx37", "i10_dx38","i10_dx39","i10_dx40",
+#"i10_pr16", "i10_pr17","i10_pr18","i10_pr19","i10_pr20","i10_pr21","i10_pr22","i10_pr23", "i10_pr24","i10_pr25",
+#"prday16" , "prday17",  "prday18" , "prday19" ,
+#"prday20" ,"prday21", "prday22","prday23", "prday24", "prday25"
+setdiff(colnames(PPH_2016),colnames(PPH_2019))
+#the variables that 2016 has but no longer exists for later years
+#"dxver""i10_ecause1" "i10_ecause2" "i10_ecause3" "i10_ecause4" "i10_necause" "prver"
+#remove them for now
+PPH_2016 <- PPH_2016 %>% select(-c("dxver","i10_ecause1","i10_ecause2", "i10_ecause3" ,"i10_ecause4" ,"i10_necause","prver"))
+```
 
 
 ```
