@@ -1,0 +1,75 @@
+---
+title: "Untitled"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readr)
+
+#import all data
+
+NIS_2016_Core <- read_csv("~/datathon/NIS_2016_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2016_Severity <- read_csv("~/datathon/NIS_2016_Severity.csv") %>%
+  mutate(key = round(key_nis))
+
+NIS_2017_Core <- read_csv("~/datathon/NIS_2017_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2017_Severity <- read_csv("~/datathon/NIS_2017_Severity.csv") %>%
+  mutate(key = round(key_nis))
+
+NIS_2018_Core <- read_csv("~/datathon/NIS_2018_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2018_Severity <- read_csv("~/datathon/NIS_2018_Severity.csv") %>%
+  mutate(key = round(key_nis))
+
+NIS_2019_Core <- read_csv("~/datathon/NIS_2019_Core.csv") %>%
+  mutate(key = round(key_nis))
+NIS_2019_Severity <- read_csv("~/datathon/NIS_2019_Severity.csv") %>%
+  mutate(key = round(key_nis))
+
+
+#filter out PPH patients (by O720/1/2/3 in diagnosis)
+
+icd_2016 <- sprintf("i10_dx%d",seq(1:30)) #2016 has 10_dx1-30, the other three year has 1-40
+PPH_Core_2016 <- NIS_2016_Core %>% 
+  filter_at(icd_2016, any_vars(.%in% c("O720","O721", "O722", "O723"))) #26588 patients diagonsed with PPH in 2016
+
+icd_2017 <- sprintf("i10_dx%d",seq(1:40)) 
+PPH_Core_2017 <- NIS_2017_Core %>% 
+  filter_at(icd_2017, any_vars(.%in% c("O720","O721", "O722", "O723"))) #28375 patients diagonsed with PPH in 2017
+
+icd_2018 <- sprintf("i10_dx%d",seq(1:40))
+PPH_Core_2018 <- NIS_2018_Core %>% 
+  filter_at(icd_2018, any_vars(.%in% c("O720","O721", "O722", "O723"))) #30204 patients diagonsed with PPH in 2018
+
+icd_2019 <- sprintf("i10_dx%d",seq(1:40)) 
+PPH_Core_2019 <- NIS_2019_Core %>% 
+  filter_at(icd_2019, any_vars(.%in% c("O720","O721", "O722", "O723"))) #32416 patients diagonsed with PPH in 2019
+
+#Join severity table, combine 2016-2019
+
+PPH_2016 <- left_join(PPH_Core_2016, NIS_2016_Severity, by = "key") %>%     select(-c("key_nis.x","hosp_nis.y")) %>% 
+  select(-c("dxver","i10_ecause1","i10_ecause2", "i10_ecause3" ,"i10_ecause4" ,"i10_necause","prver")) %>% 
+  add_column("i10_dx31" = NA,"i10_dx32" = NA,"i10_dx33" = NA,"i10_dx34"= NA, "i10_dx35"= NA,"i10_dx36"= NA,"i10_dx37"= NA, "i10_dx38"= NA,"i10_dx39"= NA,"i10_dx40"= NA, .after = "i10_dx30") %>%
+  add_column("i10_pr16" = NA, "i10_pr17" = NA,"i10_pr18" = NA,"i10_pr19"= NA,"i10_pr20"= NA,"i10_pr21"= NA,"i10_pr22"= NA,"i10_pr23"= NA, "i10_pr24"= NA,"i10_pr25"= NA, .after = "i10_pr15") %>%
+  add_column("prday16"= NA , "prday17"= NA,  "prday18"= NA , "prday19" = NA,
+"prday20" = NA,"prday21"= NA, "prday22"= NA,"prday23"= NA, "prday24"= NA, "prday25"= NA, .after = "prday15")
+#the variables that 2016 has but no longer exists for later years："dxver""i10_ecause1" "i10_ecause2" "i10_ecause3" "i10_ecause4" "i10_necause" "prver"， remove them for now
+
+PPH_2017 <- left_join(PPH_Core_2017, NIS_2017_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y","dxver","prver")) #the dxver and prver in 2017 are all 10,no these two columns in years after
+
+PPH_2018 <- left_join(PPH_Core_2018, NIS_2018_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
+
+PPH_2019 <- left_join(PPH_Core_2019, NIS_2019_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y")) %>% 
+select(-c("i10_birth", "i10_delivery", "i10_injury",    "i10_multinjury" , "i10_serviceline" ,"pclass_orproc")) #there are 6 new variables in 2019 "i10_birth", "i10_delivery", "i10_injury"     "i10_multinjury" , "i10_serviceline" ,"pclass_orproc", drop them for now
+
+
+#final,big dataset combining 2016-2019 year
+PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019)
+```

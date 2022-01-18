@@ -86,13 +86,13 @@ PPH_2019 <- PPH_2019 %>% select(-c("i10_birth", "i10_delivery", "i10_injury",   
 icd_2016 <- sprintf("i10_dx%d",seq(1:30)) 
 NIS_2016_Core <- read_csv("~/datathon/NIS_2016_Core.csv") %>%
   mutate(key = round(key_nis))
-NIS_2017_Severity <- read_csv("~/datathon/NIS_2016_Severity.csv") %>%
+NIS_2016_Severity <- read_csv("~/datathon/NIS_2016_Severity.csv") %>%
   mutate(key = round(key_nis))
 PPH_Core_2016 <- NIS_2016_Core %>% 
   filter_at(icd_2016, any_vars(.%in% c("O720","O721", "O722", "O723")))
 count(PPH_Core_2016) #25688 patients diagonsed with PPH in 2017
 
-PPH_2016 <- left_join(PPH_Core_2016, NIS_2017_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
+PPH_2016 <- left_join(PPH_Core_2016, NIS_2016_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
 setdiff(colnames(PPH_2019),colnames(PPH_2016))
 # need to add 3*10 columns with the following names(all values set to NA) #"i10_dx31","i10_dx32","i10_dx33","i10_dx34", "i10_dx35","i10_dx36","i10_dx37", "i10_dx38","i10_dx39","i10_dx40",
 #"i10_pr16", "i10_pr17","i10_pr18","i10_pr19","i10_pr20","i10_pr21","i10_pr22","i10_pr23", "i10_pr24","i10_pr25",
