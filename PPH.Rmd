@@ -102,7 +102,23 @@ setdiff(colnames(PPH_2016),colnames(PPH_2019))
 #the variables that 2016 has but no longer exists for later years
 #"dxver""i10_ecause1" "i10_ecause2" "i10_ecause3" "i10_ecause4" "i10_necause" "prver"
 #remove them for now
-PPH_2016 <- PPH_2016 %>% select(-c("dxver","i10_ecause1","i10_ecause2", "i10_ecause3" ,"i10_ecause4" ,"i10_necause","prver"))
+PPH_2016 <- PPH_2016 %>% 
+  select(-c("dxver","i10_ecause1","i10_ecause2", "i10_ecause3" ,"i10_ecause4" ,"i10_necause","prver")) %>% 
+  add_column("i10_dx31" = NA,"i10_dx32" = NA,"i10_dx33" = NA,"i10_dx34"= NA, "i10_dx35"= NA,"i10_dx36"= NA,"i10_dx37"= NA, "i10_dx38"= NA,"i10_dx39"= NA,"i10_dx40"= NA, .after = "i10_dx30") %>%
+  add_column("i10_pr16" = NA, "i10_pr17" = NA,"i10_pr18" = NA,"i10_pr19"= NA,"i10_pr20"= NA,"i10_pr21"= NA,"i10_pr22"= NA,"i10_pr23"= NA, "i10_pr24"= NA,"i10_pr25"= NA, .after = "i10_pr15") %>%
+  add_column("prday16"= NA , "prday17"= NA,  "prday18"= NA , "prday19" = NA,
+"prday20" = NA,"prday21"= NA, "prday22"= NA,"prday23"= NA, "prday24"= NA, "prday25"= NA, .after = "prday15")
+
+#check if all datasets has same column names
+check <- cbind(as.data.frame(colnames(PPH_2016)),as.data.frame(colnames(PPH_2017)),as.data.frame(colnames(PPH_2018)), as.data.frame(colnames(PPH_2019)))
+check %>% filter(colnames(PPH_2016) == colnames(PPH_2018) | 
+                 colnames(PPH_2016) == colnames(PPH_2017) |
+                 colnames(PPH_2016) == colnames(PPH_2019) ) #returns all the 125 rows! so now all 4 datasets have same variables in same order
+
+
+#final,big dataset combining 2016-2019 year
+PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019)
+
 ```
 
 
