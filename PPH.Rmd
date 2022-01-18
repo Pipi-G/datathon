@@ -1,0 +1,34 @@
+---
+title: "PPH data"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readr)
+NIS_2018_Core <- read_csv("~/datathon/NIS_2018_Core.csv")
+NIS_2018_Severity <- read_csv("~/datathon/NIS_2018_Severity.csv")
+
+icd_2018 <- sprintf("i10_dx%d",seq(1:40))
+PPH_Core_2018 <- NIS_2018_Core %>% filter_at(icd_2018, any_vars(.%in% c("O720","O721", "O722", "O723")))
+trial_core_2018 <- NIS_2018_Core%>% head(10)
+trial_severity_2018 <- NIS_2018_Severity %>% head(20)
+```
+
+```{r}
+#left_join
+left_join(trial_core_2018, trial_severity_2018, by = "key_nis")
+
+trial_core_2018_int <- trial_core_2018 %>% 
+  mutate(key = as.integer(as.character(key_nis)))
+
+trial_severity_2018_int <- trial_severity_2018 %>% 
+  mutate(key = as.integer(as.character(key_nis)))
+
+left_join(trial_core_2018_int, trial_severity_2018_int, by = "key")
+
+```
