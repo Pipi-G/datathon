@@ -72,4 +72,18 @@ select(-c("i10_birth", "i10_delivery", "i10_injury",    "i10_multinjury" , "i10_
 
 #final,big dataset combining 2016-2019 year
 PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019)
+
+```
+
+### Visualizations
+```{r}
+# race stats
+race_dist <- PPH %>% group_by(race) %>% summarise(count = n(), percentage = n()/117583) %>% add_column("description"= c("White", "Black", "Hispanic", "Asian or Pacific Islander", "Native American", "Other", "Missing"), .after = "race")
+
+
+race_dist %>% 
+ggplot(aes(x=description, y=percentage)) + 
+  geom_bar(stat = "identity")
+
+#https://www.r-graph-gallery.com/218-basic-barplots-with-ggplot2.html
 ```
