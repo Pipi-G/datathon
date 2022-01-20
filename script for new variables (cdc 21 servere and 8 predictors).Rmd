@@ -1,0 +1,185 @@
+---
+title: "script for generating new variables"
+output: pdf_document
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+PPH <- read_csv("PPH.csv")
+```
+
+### Create variables for Severe Maternal Morbidity (CDC)
+The new variables are labeled cdc_s1-cdc_s21
+
+1. Acute myocardial infarctionTransfusion: I21.01, I21.02, I21.09, I21.11, I21.19, I21.21, I21.29, I21.3, I21.4, I21.9, I21.A1 and I21.A9(I21.xx, I22.x)
+ 
+```{r}
+PPH$cdc_s1 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^I21|^I22")),1,0)
+```
+
+2.  Aneurysm: I71.xx,I79.0
+```{r}
+PPH$cdc_s2 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^I71|^I790$")),1,0)
+```
+
+3. Acute renal failure: N17.0, N17.1, N17.2, N17.8, N17.9, O90.4 (N17.x, O90.4)
+```{r}
+PPH$cdc_s3 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^N17|^O904$")),1,0)
+```
+
+4. Adult respiratory distress syndrome: J80, J95.1, J95.2, J95.3, J95.821, J95.822, J96.00, J96.01, J96.02,
+J96.20, J96.21, J96.22, R09.2 (J80, J95.1, J95.2, J95.3, J95.82x, J96.0x, J96.2x R09.2)
+```{r}
+PPH$cdc_s4 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^J80$|^J951$|^J952$|^J953$|^J9582|^J960|^J962|^R092$")),1,0)
+```
+
+5. Amniotic fluid embolism: O88.111,O88.112,O88.113, O88.12 (childbirth), O88.13 (O88.1x)
+```{r}
+PPH$cdc_s5 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O881")),1,0)
+```
+
+
+6. Cardiac arrest/ventricular fibrillation: I46.2, I46.8, I46.9, I49.01, I49.02(I46.x, I49.0x)
+```{r}
+PPH$cdc_s6 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^I46|^I490")),1,0)
+```
+
+7. Conversion of cardiac rhythm(PR):	5A2204Z, 5A12012
+
+```{r}
+PPH$cdc_s7 <- ifelse(!!rowSums(sapply(PPH[59:83], grepl, pattern = "5A2204Z|5A12012")),1,0)
+```
+
+
+8. Disseminated intravascular coagulation: D65, D68.8, D68.9, O72.3
+
+```{r}
+PPH$cdc_s8 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^D65$|^D688$|^D689$|^O723$")),1,0)
+```
+
+9. Eclampsia:	O15.00, O15.02, O15.03, O15.1, O15.2, O15.9 (O15. X)
+```{r}
+PPH$cdc_s9 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O15")),1,0)
+```
+
+10. Heart failure/arrest during surgery or procedure: I97.120, I97.121, I97.130, I97.131, I97.710, I97.711 (I97.12x, I97.13x, I97.710, I97.711)
+```{r}
+PPH$cdc_s10 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^I9712|I9713|^I97710$|^I97711$")),1,0)
+```
+
+11. Puerperal cerebrovascular disorders: I60.xx- I68.xx, O22.51, O22.52, O22.53, I97.81x, I97.82x, O87.3
+```{r}
+PPH$cdc_s11 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^I60|^I61|^I62|^I63|^I64|^I65|^I66|^I67|^I68|^O2251$|^O2252$|^O2253$|^I9781|^I9782|^O873$")),1,0)
+```
+
+12. Pulmonary edema / Acute heart failure: J81.0, I50.1, I50.20, I50.21, I50.23, I50.30, I50.31, I50.33, I50.40, I50.41, I50.43, I50.9
+```{r}
+PPH$cdc_s12 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^J810$|^I501$|^I5020$|^I5021$|^I5023$|^I5030$|^I5031$|^I5033$|^I5040$|^I5041$|^I5043$|^I509$")),1,0)
+```
+
+
+13. Severe anesthesia complications: O74.0 , O74.1, O74.2, O74.3, O89.01, O89.09, O89.1, O89.2 (O74.0 , O74.1 , O74.2, O74.3, O89.0x, O89.1, O89.2)
+```{r}
+PPH$cdc_s13 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O740$|^O741$|^O742$|^O743$|^I5023$|^O890|^O891$|^O892$")),1,0)
+```
+
+14. Sepsis: O85, O86.04, T80.211A, T81.4XXA, T81.44xx,
+or R65.20 or A40.x, A41.x, A32.7
+```{r}
+PPH$cdc_s14 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O85$|^O8604$|^T80211A$|^T814XXA$|^T8144$|^R6520$ |^A40|^A41|^A327$")),1,0)
+``` 
+
+15. Shock: O75.1, R57.x, R65.21, T78.2XXA, T88.2 XXA, T88.6 XXA, T81.10XA , T81.11XA, T81.19XA
+```{r}
+PPH$cdc_s15 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O751$|^R57|^R6521$|^T782XXA$|^T882XXA$|^T886XXA$ |^T8110XA$|^T8111XA$|^T8119XA$")),1,0)
+``` 
+
+16. Sickle cell disease with crisis: D57.00 , D57.01, D57.02, D57.211, D57.212, D57.219, D57.411, D57.412, D57.419, D57.811, D57.812, D57.819 (D57.0x, D57.21x, D57.41x, D57.81x)
+```{r}
+PPH$cdc_s16 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^D570|^D5721|^D5741|^D5781")),1,0)
+``` 
+
+17. Air and thrombotic embolism: I26.01, I26.02, I26.09, I26.90, I26.92, I26.99, O88.011-O88.019, 088.02, O88.03, O88.211-O88.219, O88.22, O88.23, O88.311-O88.319, O88.32, O88.33, O88.81, O88.82, O88.83 (I26.x, O88.0x, O88.2x, O88.3x, O88.8x)
+
+```{r}
+PPH$cdc_s17 <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^I26|^O880|^O882|^O883|^O888")),1,0)
+``` 
+
+18. Blood products transfusion(PR): 30233 Peripheral vein, percutaneous(7th digit: x=1: nonautologous)30240 Central Vein, open(7th digit: x=1: nonautologous)30243 Central Vein, percutaneous (full codes starts with 30233, 30230, 30243, 30240, 30253, 30250, 30263,30260)
+
+```{r}
+PPH$cdc_s18 <- ifelse(!!rowSums(sapply(PPH[59:83], grepl, pattern = "^30233|^30230|^30240|^30243|^30250|^30253|^30260|^30263")),1,0)
+``` 
+
+19. Hysterectomy(PR): 0UT90ZZ, 0UT94ZZ, 0UT97ZZ, 0UT98ZZ, 0UT9FZZ
+
+```{r}
+PPH$cdc_s19 <- ifelse(!!rowSums(sapply(PPH[59:83], grepl, pattern = "^0UT90ZZ$|^0UT94ZZ$|^0UT97ZZ$|^0UT98ZZ$|^0UT9FZZ$")),1,0)
+```
+
+20. Temporary tracheostomy(PR): 0B110Z4, 0B110F4, 0B113Z4, 0B113F4, 0B114Z4, 0B114F4
+```{r}
+PPH$cdc_s20 <- ifelse(!!rowSums(sapply(PPH[59:83], grepl, pattern = "^0B110Z4$|^0B110F4$|^0B113Z4$|^0B113F4$|^0B114Z4$|^0B114F4$")),1,0)
+
+```
+
+21.Ventilation(PR): 5A1935Z, 5A1945Z,
+5A1955Z
+```{r}
+PPH$cdc_s21 <- ifelse(!!rowSums(sapply(PPH[59:83], grepl, pattern = "^5A1935Z$|^5A1945Z$|^5A1955Z$")),1,0)
+```
+
+
+
+### Create variables for other predictors
+
+1. Obesity: O99.214; Unspecified obesity E66.9
+
+```{r}
+PPH$obesity <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O99214$|^E669$")),1,0)
+
+```
+
+2. Gestational diabetes: O24.4, O24.4xx
+History of GD: Z86.32
+
+```{r}
+PPH$diabetes <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O244|^Z8632$")),1,0)
+```
+
+3. Gestational hypertension:  O13.x Gestational [pregnancy-induced] hypertension without significant proteinuria
+```{r}
+PPH$gh <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O13")),1,0)
+```
+
+4. Multiple gestation: O30
+```{r}
+PPH$mg <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O30")),1,0)
+```
+
+5. Placenta previa (may not be at admission): O44.xx
+```{r}
+PPH$pp <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O44")),1,0)
+```
+
+6. Placental abruption (may not be at admission): O45.xxx
+```{r}
+PPH$pa <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O45")),1,0)
+```
+
+7. Prolonged labor: O63.x
+```{r}
+PPH$pl <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O63")),1,0)
+```
+ 
+8. Hypertrophy of uterus: N85.2
+```{r}
+PPH$hu <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^N852$")),1,0)
+```
+
+```{r}
+#save to my local folder
+write.csv(PPH,"D:\\Pomona Semester files\\datathon\\PPH_newcols.csv", row.names = FALSE)
+```
+The new PPH dataframe has 125+21+8=154 variables
