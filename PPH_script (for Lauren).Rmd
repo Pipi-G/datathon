@@ -77,6 +77,10 @@ PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019)
 
 ### Visualizations
 ```{r}
+library(readr)
+library(tidyverse)
+PPH <- read_csv("PPH.csv")
+
 # race stats
 race_dist <- PPH %>% group_by(race) %>% summarise(count = n(), percentage = n()/117583) %>% add_column("description"= c("White", "Black", "Hispanic", "Asian or Pacific Islander", "Native American", "Other", "Missing"), .after = "race")
 
@@ -86,4 +90,47 @@ ggplot(aes(x=description, y=percentage)) +
   geom_bar(stat = "identity")
 
 #https://www.r-graph-gallery.com/218-basic-barplots-with-ggplot2.html
+```
+
+### some tables
+```{r}
+# severity level distribution
+sev_lev <- PPH %>% group_by(aprdrg_severity) %>% summarize(n())
+sev_lev
+
+# Gestational hypertension
+i10_dxs <- sprintf("i10_dx%d",seq(1:40)) 
+gest_hyp <- PPH %>% 
+  filter_at(i10_dxs, any_vars(.%in% c("O13", "O131", "O133", "O139"))) 
+
+```
+
+```{r}
+
+PPH$test <- grepl("O", PPH$i10_dx1), 1, 0)
+#PPH %>% select(i10_dx1, test)
+
+# column 59-83 are the procedures i10_pr1 - i10_pr25
+# column 17-56 are the diagnoses i10_dx1 - i10_dx40
+print(PPH[59:83])
+print(PPH[17:56])
+
+# create an additional column indicating number of times transfusion is taken among all procedures
+PPH$transfusion <- ifelse(rowSums(sapply(PPH[59:83], grepl, pattern = "30233H1|30233L1|30233K1|30233M1|30233N1|30233P1|30233R1|30233T1|30233H0|30233L0|30233K0|30233M0|30233N0|30233P0|30233R0|30233T0")) == 0, 0,1)
+
+PPH %>% select()
+
+# create an additional column indicating obesity in diagonsis
+PPH$obesity <- ifelse(sapply(PPH[17:56], grepl, pattern = "O99214"),1,0)
+
+#quick check
+a <- PPH %>% select( obesity, sprintf("i10_dx%d",seq(1:40))) %>% filter(obesity == 1)
+
+# Multiple gestation: O30.8, O30.8x, O30.9
+PPH$MG <- ifelse(sapply(PPH[17:56], grepl, pattern = "O30"),1,0)
+PPH %>% select()
+
+
+n <- PPH %>% filter(drg != drg_nopoa)
+
 ```
