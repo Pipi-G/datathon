@@ -1,0 +1,22 @@
+---
+title: "Visualization"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(readr)
+PPH <- read_csv("PPH_newcols.csv")
+```
+```{r}
+colnames(PPH)
+#the cdc 21 severity
+PPH[126:146]
+PPH$sever_morbidity <- ifelse(!!rowSums(PPH[126:146]),1,0)
+
+sever <- PPH %>% filter(sever_morbidity == 1) 
+a <- sever %>% group_by(race) %>% summarise(s = n())
+b <- PPH %>% group_by(race) %>% summarise(total = n())
+c <- cbind(a, b$total) %>% mutate(percentage = s/b$total)
+
+```
