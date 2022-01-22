@@ -1,0 +1,134 @@
+---
+title: "replicate PPH paper"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(readr)
+PPH <- read_csv("PPH_newcols.csv") %>% mutate(SMM = ifelse(!!rowSums(PPH[126:146]), "Y", "N"))
+
+race_table <- data.frame (race = c(1,2,3,4,5,6,NA),
+                  race_description = c("White", "Black", "Hispanic", "Asian or PI", "Native American", "Other", "Unknown") )
+
+PPH <- left_join(PPH, race_table, by = "race" )
+
+head(PPH)
+```
+
+"A total of 360,370 (3.2%) of 11,260,869
+estimated deliveries to women aged
+15e54 years complicated by postpartum
+hemorrhage were included in this anal-
+ysis (Table 1)."
+
+```{r}
+# We have 117583 observation of PPH patients.
+# If we take weight into consideration, then we have
+
+PPH %>% select(discwt) %>% sum()
+```
+PPH patient count by racce
+```{r}
+
+race_stats <- PPH %>% group_by(race_description) %>% summarise(count = n(), demograph_perc = round(n()/117583, digits = 3)) %>% arrange(desc(demograph_perc))
+
+#hide the row for unknown
+race_stats_known <- race_stats[-c(5),]
+
+
+```
+
+```{r}
+library(scales)
+ggplot(race_stats_known, aes(x = reorder(race_description, -demograph_perc), y = demograph_perc)) +
+  geom_bar(stat = "identity", width= 0.8, fill = "blue") +
+  xlab("Race") + 
+  ylab("Percentage ") + 
+  scale_y_continuous(labels = scales::percent) + 
+  theme(axis.text.x = element_text(size = 8), 
+        axis.text.y = element_text(size = 8),)
+
+```
+
+### PPH Mortality by Race
+
+```{r}
+died <- PPH %>% filter(died == 1) %>% group_by(race_description) %>% summarise(mortality = n()) 
+
+died <- left_join(race_stats, died, by = "race_description")
+died <- died %>% 
+  mutate(mort_rate = mortality/race_stats$count)
+
+
+ggplot(died[-c(5),], aes(x = reorder(race_description, -mort_rate), y = mort_rate)) +
+  geom_bar(stat = "identity", width= 0.8, fill = "blue") +
+  xlab("Race") + 
+  ylab("Mortality Rate ") + 
+  scale_y_continuous(labels = scales::percent) + 
+  theme(axis.text.x = element_text(size = 7), 
+        axis.text.y = element_text(size = 8))
+
+```
+
+```{r}
+
+race_percentage_plot <- ggplot(PPH, aes(race)) + 
+          geom_bar(aes(y = (..count..)/sum(..count..))) + 
+          scale_y_continuous(labels=scales::percent) +
+  ylab("race percentage")
+
+
+race_percentage_plot
+```
+
+```{r}
+library(scales) 
+data(tips, package = "reshape2")
+myplot <- ggplot(tips, aes(day)) + 
+          geom_bar(aes(y = (..count..)/sum(..count..))) + 
+          scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies")
+
+myplot
+
+```
+
+
+```{r}
+PPH <- PPH %>% 
+  mutate(SMM = ifelse(!!rowSums(PPH[126:146]), "Y", "N")) 
+
+two_severe <- PPH %>% group_by(SMM, aprdrg_severity) %>% summarize(total = n()) 
+
+PPH %>% ggplot(aes(x = aprdrg_severity)) + geom_bar() + facet_wrap(~ SMM)
+
+PPH %>% summarize(n())
+
+```
+
+CDC's Severe Maternal Morbidity and aprdrg_severity
+
+### Figure 1. The risk for severe maternal morbidity (SMM) based on race, including transfusion (left) and roldugin transfusion (right) 
+
+```{r}
+sever <- PPH %>% filter(sever_morbidity == 1) 
+a <- sever %>% group_by(race) %>% summarise(s = n())
+b <- PPH %>% group_by(race) %>% summarise(total = n())
+c <- cbind(a, b$total) %>% mutate(percentage = s/b$total)
+```
+
+### Figure 2. The risk for disseminated intravascular coagulation (A), transfusion (B), and hysterectomy (C) within a race for patients with postpartum hemorrhage.
+
+
+### Figure 3. The risk for morbidity based on the median income of patients’ zipcode.
+
+
+```{r}
+x <- tibble(a = c("White", "Black", "Asian"), b = c(45, 21, 10))
+x
+
+x %>$
+
+```
