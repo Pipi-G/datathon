@@ -1,0 +1,34 @@
+---
+title: "new variables"
+output: pdf_document
+---
+
+```{r}
+
+library(tidyverse)
+library(tidymodels)
+library(readr)
+PPH <- read_csv("PPH_newcols.csv") 
+
+PPH$SMM = ifelse(!!rowSums(PPH[126:146]), "Y", "N")
+
+# Pre-eclampsia: 
+PPH$pe <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O14|^O10919$|^O119$")),1,0)
+
+# Anemia associated with pregnancy
+PPH$aap <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O99")),1,0)
+
+# Uterine fibroid
+PPH$uf <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^D25")),1,0)
+
+#Uterine rupture during labor
+PPH$urdl <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O71")),1,0)
+
+#Assisted reproductive tech: ^O09.81
+PPH$art <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O0981")),1,0)
+
+#Chorioamnionitis: ^O41.12 
+PPH$cra <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O4112")),1,0)
+
+write.csv(PPH,"D:\\Pomona Semester files\\datathon\\PPH_updated.csv", row.names = FALSE)
+```
