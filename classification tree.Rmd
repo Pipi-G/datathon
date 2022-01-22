@@ -1,5 +1,5 @@
 ---
-title: "Visualization"
+title: "Classification ML"
 output: pdf_document
 ---
 
@@ -18,54 +18,31 @@ PPH <- read_csv("PPH_newcols.csv")
 #the cdc 21 severity
 PPH[126:146]
 
-PPH_ml <- PPH %>% mutate(m = as.factor( ifelse(!!rowSums(PPH[126:146]), 1, 0))) %>% select(age, race, zipinc_qrtl, obesity, diabetes, gh , mg , pp , pa , pl, hu , m)
+#SMM is severe maternal morbidity according tO cdc's definition, Y means severe, N means not severe
 
-PPH_ml %>% filter(m == 1)
-
-```
-
-```{r}
-two_severe <- PPH %>% group_by(severe_morbidity, aprdrg_severity) %>% summarize(total = n()) 
-
-PPH %>% ggplot(aes(x = aprdrg_severity)) + geom_bar() + facet_wrap(~ severe_morbidity)
+PPH_ml <- PPH %>% mutate(SMM = ifelse(!!rowSums(PPH[126:146]), "Y", "N")) %>% select(age, died, race, zipinc_qrtl, obesity, diabetes, gh , mg , pp , pa , pl, hu , SMM)
 
 ```
-
-CDC's Severe Maternal Morbidity and aprdrg_severity
-
-### Figure 1. The risk for severe maternal morbidity (SMM) based on race, including transfusion (left) and roldugin transfusion (right) 
-
-```{r}
-sever <- PPH %>% filter(sever_morbidity == 1) 
-a <- sever %>% group_by(race) %>% summarise(s = n())
-b <- PPH %>% group_by(race) %>% summarise(total = n())
-c <- cbind(a, b$total) %>% mutate(percentage = s/b$total)
-```
-
-### Figure 2. The risk for disseminated intravascular coagulation (A), transfusion (B), and hysterectomy (C) within a race for patients with postpartum hemorrhage.
-
-
-### Figure 3. The risk for morbidity based on the median income of patients’ zipcode.
 
 ### CART
 
 ```{r}
 #partition the dataset into train data and test data
-set.seed(100)
-PPH_split <- initial_split(PPH_ml, prop = 0.75, strata = m)
+set.seed(4747)
+PPH_split <- initial_split(PPH_ml, prop = 0.75, strata = SMM)
 PPH_train <- training(PPH_split)
 PPH_test <- testing(PPH_split)
 ```
 
-Model 1: CART 
 
 ```{r}
 # recipe
-PPH_recipe <-
-recipe(m ~ age + race , data = PPH_train) %>%
-step_mutate(race = as.factor(race))
+PPH_cart_recipe <- recipe(SMM ~ . , data = PPH_train) %>%
+  step_mutate(race = as.factor(race), zipinc_qrtl = as.factor(zipinc_qrtl)) %>%
+  step_dummy(race) %>%
+  step_dummy(zipinc_qrtl)
 
-summary(PPH_recipe)
+summary(PPH_cart_recipe)
 
 ```
 
@@ -74,10 +51,13 @@ PPH_cart <- decision_tree() %>%
   set_engine("rpart") %>%
   set_mode("classification")
 
+PPH_cart
 
 PPH_cart_wflow <- workflow() %>%
   add_model(PPH_cart) %>%
-  add_recipe(PPH_recipe)
+  add_recipe(PPH_cart_recipe)
+
+PPH_cart_wflow
 
 PPH_cart_fit <- PPH_cart_wflow %>%
   fit(data = PPH_train)
@@ -85,7 +65,7 @@ PPH_cart_fit <- PPH_cart_wflow %>%
 PPH_cart_fit %>%
   predict(new_data = PPH_train) %>%
   cbind(PPH_train) %>%
-  select(.pred_class, m) %>%
+  select(.pred_class, SMM) %>%
   table()
 
 
@@ -105,7 +85,7 @@ Model 2: Random Forest. Tuning parameters: mtry and number of trees.
 ```{r}
 # recipe
 PPH_rf_recipe <-
-recipe(m ~. , data = PPH_train) 
+recipe(SMM ~. , data = PPH_train) 
 
 summary(PPH_rf_recipe)
 
@@ -114,7 +94,7 @@ summary(PPH_rf_recipe)
 #model
 PPH_rf <- rand_forest(mtry = tune(),
                            trees = tune()) %>%
-  set_engine("randomForest", importance = "permutation") %>%
+  set_engine("ranger", importance = "permutation") %>%
   set_mode("classification")
 
 
@@ -129,7 +109,7 @@ PPH_folds <- vfold_cv(PPH_train, v = 5)
 
 #grid for tuning mtry and trees
 rf_grid <- grid_regular(mtry(range = c(2,11)),
-                             trees(range = c(1,500)),
+                             trees(range = c(1,400)),
                              levels = 5)
 #tune
 PPH_rf_tune <- 
@@ -146,4 +126,3 @@ PPH_rf_best <- finalize_model(
 
 PPH_rf_best
 ```
-
