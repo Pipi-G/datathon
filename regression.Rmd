@@ -1,0 +1,52 @@
+---
+title: "regression"
+output: html_document
+---
+```{r}
+install.packages("sjPlot")
+library(sjPlot)
+plot_model(reg2, type="pred",terms="race")
+```
+
+```{r}
+df$variable <- as.factor(df$variable)
+```
+
+```{r}
+reg1 <- glm(PPH$sever_morbidity ~ PPH$race + PPH$zipinc_qrtl, family="binomial")
+summary(reg1)
+```
+
+```{r}
+reg2 <- glm(sever_morbidity ~ race + zipinc_qrtl + pay1, data = PPH, family="binomial")
+summary(reg2)
+```
+We suspect obesity and race are confounding factors
+```{r}
+reg2conf <- glm(sever_morbidity ~ race + zipinc_qrtl + pay1, data = PPH, family="binomial")
+summary(reg2conf)
+```
+
+```{r}
+poisson1 <-glm(sever_morbidity ~ race + zipinc_qrtl + pay1, data = PPH, family="poisson")
+summary(poisson1)
+```
+
+New risk factors
+```{r}
+PPH <- read_csv("PPH.csv")
+```
+1. preeclampsia
+O14.00, O14.9, O.14.1, O11.9,O10.919
+https://www.icd10data.com/ICD10CM/Codes/O00-O9A/O10-O16
+```{r}
+PPH$pec <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O14|^O10.919$|^O11.9$")),1,0)
+```
+
+17:56 are dx
+59:83 are pr
+quick check if the columns are correct: colnames(PPH[59:83])
+
+```{r}
+PPH$anemiapreg <- ifelse(!!rowSums(sapply(PPH[17:56], grepl, pattern = "^O99")),1,0)
+```
