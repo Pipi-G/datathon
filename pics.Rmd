@@ -7,7 +7,7 @@ output: pdf_document
 library(tidyverse)
 library(tidymodels)
 library(readr)
-PPH <- read_csv("PPH_newcols.csv") %>% mutate(SMM = ifelse(!!rowSums(PPH[126:146]), "Y", "N"))
+PPH <- read_csv("PPH_161cols.csv")
 
 race_table <- data.frame (race = c(1,2,3,4,5,6,NA),
                   race_description = c("White", "Black", "Hispanic", "Asian or PI", "Native American", "Other", "Unknown") )
@@ -32,46 +32,301 @@ PPH %>% select(discwt) %>% sum()
 PPH patient count by racce
 ```{r}
 
-race_stats <- PPH %>% group_by(race_description) %>% summarise(count = n(), demograph_perc = round(n()/117583, digits = 3)) %>% arrange(desc(demograph_perc))
+race_stats <- PPH %>% group_by(race_description) %>% summarise(count = n(), demograph_perc = round(n()/117583, digits = 3)) %>% 
+  arrange(desc(demograph_perc)) %>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
 
-#hide the row for unknown
-race_stats_known <- race_stats[-c(5),]
+race_stats$race_description <- factor(race_stats$race_description,levels = c("Black", "White", "Hispanic", "Asian or PI", "Unknown", "Native American","Other", "All"))
 
 
 ```
 
 ```{r}
 library(scales)
-ggplot(race_stats_known, aes(x = reorder(race_description, -demograph_perc), y = demograph_perc)) +
-  geom_bar(stat = "identity", width= 0.8, fill = "blue") +
+ggplot(race_stats[-c(5,8),], aes(x = race_description, y = demograph_perc)) +
+  geom_bar(stat = "identity", width= 0.8) +
   xlab("Race") + 
   ylab("Percentage ") + 
+  scale_fill_brewer() +
   scale_y_continuous(labels = scales::percent) + 
   theme(axis.text.x = element_text(size = 8), 
-        axis.text.y = element_text(size = 8),)
+        axis.text.y = element_text(size = 8))
 
 ```
 
 ### PPH Mortality by Race
 
 ```{r}
-died <- PPH %>% filter(died == 1) %>% group_by(race_description) %>% summarise(mortality = n()) 
+died <- PPH %>% filter(died == 1) %>% group_by(race_description) %>% summarise(mortality = n())%>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
 
 died <- left_join(race_stats, died, by = "race_description")
 died <- died %>% 
-  mutate(mort_rate = mortality/race_stats$count)
+  mutate(mort_rate = mortality/count)
+
+died$race_description <- factor(died$race_description,levels = c("Black", "White", "Hispanic", "Asian or PI", "Unknown", "Native American","Other", "All"))
 
 
-ggplot(died[-c(5),], aes(x = reorder(race_description, -mort_rate), y = mort_rate)) +
+ggplot(died[-c(5),], aes(x = race_description, y = mort_rate)) +
   geom_bar(stat = "identity", width= 0.8, fill = "blue") +
+  scale_fill_brewer()+
   xlab("Race") + 
-  ylab("Mortality Rate ") + 
+  ylab("Mortality Rate") + 
   scale_y_continuous(labels = scales::percent) + 
   theme(axis.text.x = element_text(size = 7), 
         axis.text.y = element_text(size = 8))
 
 ```
 
+### Fig 1.A
+The risk for severe maternal morbidity (SMM) based on race, including transfusion 
+
+```{r}
+
+severe_21 <- PPH %>% filter(SMM == "Y") %>%
+  group_by(race_description) %>% 
+  summarise(severe = n())%>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+severe_21 <- left_join(died, severe_21, by = "race_description")
+
+severe_21$race_description <- factor(severe_21$race_description,levels = c("Black", "White", "Hispanic", "Asian or PI", "Unknown", "Native American","Other", "All"))
+
+
+severe_21 <- severe_21 %>% 
+  mutate(smm_rate = severe/count)
+
+
+ggplot(severe_21[-c(5),], aes(x = race_description, y = smm_rate)) +
+  geom_bar(stat = "identity", width= 0.5, fill = "#21aca9") +
+  scale_fill_gradient()+
+  xlab("Race") + 
+  ylab("Severe Maternal Morbidity Rate") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.3)) + 
+  scale_x_discrete(labels=c("Black" = "Black*", "White" = "White(ref)", "Hispanic" =  "Hispanic*", "Asian or PI"= "Asian or PI*", "Native American" = "Native American**","Other" = "Other*", "All"))+
+ # geom_text(aes(label = severe_21_perc),size = 3, vjust = -0.5, position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(size=7,angle = 45, vjust = 1, hjust=1),
+        axis.text.y = element_text(size = 8),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "grey80"),
+       panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "grey80"),
+        panel.background = element_blank())
+       #panel.border = element_rect(size = 0.5, linetype = 'solid', colour = "grey80", fill = NA))
+
+```
+
+
+
+### Figure 1.B
+
+above without transfusion
+
+```{r}
+severe_20 <- PPH %>% filter(SMM == "Y", cdc_s18 == 0) %>%
+  group_by(race_description) %>% 
+  summarise(severe_no_trans = n())%>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+severe_20 <- left_join(severe_21, severe_20, by = "race_description")
+
+severe_20 <- severe_20 %>% 
+  mutate(smm_no_trans_rate = severe_no_trans/count)
+
+ggplot(severe_20[-c(5),], aes(x = race_description, y = smm_no_trans_rate)) +
+  geom_bar(stat = "identity", width= 0.5, fill = "blue") +
+  xlab("Race") + 
+  ylab("Severe morbidity excluding transufusion" ) + 
+  scale_y_continuous(labels = scales::percent) + 
+  theme(axis.text.x = element_text(size = 7), 
+        axis.text.y = element_text(size = 8),
+        axis.title = element_text(size=10)
+        )
+```
+
+### Fig.2
+The risk for disseminated intravascular coagulation (A), transfusion (B), and hysterectomy (C) within a race for patients with postpartum hemorrhage.
+
+```{r}
+dic <- PPH %>% filter(cdc_s8 == 1) %>%
+  group_by(race_description) %>% 
+  summarise(dic_count = n()) %>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+dic <- left_join(severe_20, dic, by = "race_description")
+
+dic <- dic %>% 
+  mutate( dic_risk = dic_count/count)
+
+#transfusion
+trans <- PPH %>% filter(cdc_s18 == 1) %>%
+  group_by(race_description) %>% 
+  summarise(trans_count = n()) %>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+
+trans <- left_join(dic, trans, by = "race_description")
+
+trans <- trans %>% 
+  mutate( trans_risk = trans_count/count)
+
+#hyst
+
+hyst <- PPH %>% filter(cdc_s19 == 1) %>%
+  group_by(race_description) %>% 
+  summarise(hyst_count = n()) %>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+hyst <- left_join(trans, hyst, by = "race_description")
+
+hyst <- hyst %>% 
+  mutate( hyst_risk = hyst_count/count)
+
+hyst$race_description <- factor(hyst$race_description,levels = c("Black", "White", "Hispanic", "Asian or PI", "Unknown", "Native American","Other", "All"))
+
+stack <- hyst %>% 
+  select(race_description,trans_risk,dic_risk, hyst_risk) %>%
+  pivot_longer(cols = !race_description, names_to = "type", values_to = "risk") %>% filter(race_description != "Unknown")
+
+ggplot(stack, aes(x = race_description, y = risk)) +
+  geom_bar(stat = "identity", width= 0.5, fill = "#21aca9") +
+  facet_wrap(~ type, ncol = 1, scales = "free_y")+
+  xlab("Race") + 
+  ylab("Top 3 most frequent SMM indicator rate") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.2)) 
+ # geom_text(aes(label = severe_21_perc),size = 3, vjust = -0.5, position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(size=7,angle = 45, vjust = 1, hjust=1),
+        axis.text.y = element_text(size = 8),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "grey80"),
+       panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "grey80"),
+        panel.background = element_blank())
+
+
+
+```
+```{r}
+hyst
+
+ggplot(hyst[-c(5),], aes(x = race_description, y = trans_risk)) + 
+  geom_bar(stat = "identity", width= 0.5, fill = "#029076") +
+  scale_fill_gradient()+
+  xlab("") + 
+  ylab("Transfusion Risk") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, 0.2)) + 
+  scale_x_discrete(labels=c("Black" = "Black**", "White" = "White(ref)", "Hispanic" =  "Hispanic**", "Asian or PI"= "Asian or PI**", "Native American" = "Native American","Other" = "Other**", "All"))+
+ # geom_text(aes(label = severe_21_perc),size = 3, vjust = -0.5, position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(size= 6),
+        axis.text.y = element_text(size = 8),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "grey80"),
+       panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "grey80"),
+        panel.background = element_blank(), 
+       aspect.ratio = 0.3)
+       #panel.border = element_rect(size = 0.5, linetype = 'solid', colour = "grey80", fill = NA))
+
+
+ggplot(hyst[-c(5),], aes(x = race_description, y = hyst_risk)) + 
+  geom_bar(stat = "identity", width= 0.5, fill = "#029076") +
+  scale_fill_gradient()+
+  xlab("Race") + 
+  ylab("Hysterectomy Risk") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.5), limits = c(0, 0.02)) + 
+  scale_x_discrete(labels=c("Black" = "Black**", "White" = "White(ref)", "Hispanic" =  "Hispanic*", "Asian or PI"= "Asian or PI", "Native American" = "Native American","Other" = "Other", "All"))+
+ # geom_text(aes(label = severe_21_perc),size = 3, vjust = -0.5, position = position_dodge(0.9)) +
+  theme(axis.text.x = element_text(size= 6),
+        axis.text.y = element_text(size = 8),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "grey80"),
+       panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "grey80"),
+        panel.background = element_blank(), 
+       aspect.ratio = 0.3)
+       #panel.border = element_rect(size = 0.5, linetype = 'solid', colour = "grey80", fill = NA))
+
+
+
+
+```
+Figure 3. The risk for morbidity based on the median income of patients’ zipcode.
+```{r}
+inc_table <- data.frame (zipinc_qrtl = c(1,2,3,4,NA),
+                  inc_description = c("1", "2", "3", "4", "Unknown") )
+
+PPH <- left_join(PPH, inc_table, by = "zipinc_qrtl" )
+
+inc_stats <- PPH %>% group_by(inc_description) %>% summarise(count = n(), demograph_perc = round(n()/117583, digits = 3)) %>% 
+  arrange(desc(demograph_perc)) %>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+SMM_inc <- PPH %>% filter(SMM == "Y") %>% group_by(inc_description) %>% summarise(smm_count = n())%>%
+  bind_rows(summarise(.,
+                      across(where(is.numeric), sum),
+                      across(where(is.character), ~"All")))
+
+SMM_inc <- left_join(inc_stats, SMM_inc, by = "inc_description")
+SMM_inc <- SMM_inc %>% 
+  mutate(smm_rate = smm_count/count)
+
+```
+
+
+```{r}
+
+year_pop <- PPH %>% group_by(year) %>% summarise(PPH_population_count = n())
+ 
+year_pop$core_count <- c(7135090, 7159694, 7105498, 7083805)
+
+
+year_pop <- year_pop %>% mutate(PPH_perc = PPH_population_count/core_count * 1000)
+
+year_pop 
+
+
+counts <- c('26,588', '28,375', '30,204', '32,416')
+ggplot(year_pop, aes(x = year, y = PPH_perc)) +
+  geom_line(color = "#5ec9ab")+
+  geom_point(size = 2, color = "#267f87")+
+  xlab("Year") + 
+  ylab("Number of PPH patients\nper 1000 inpatient records\n") + geom_text(aes(label = counts),size = 3, vjust = 2, position = position_dodge(0.9))+
+  scale_y_continuous(limits = c(3, 5)) + 
+  theme_minimal()
+```
+
+```{r}
+PPH %>% filter(SMM == "Y") %>% summarize(n()) 
+# 21501 out of 117583 are severe
+cdc_severe_count <- c(sum(PPH$cdc_s1), sum(PPH$cdc_s2),sum(PPH$cdc_s3), sum(PPH$cdc_s4),sum(PPH$cdc_s5), sum(PPH$cdc_s6),sum(PPH$cdc_s7), sum(PPH$cdc_s8),sum(PPH$cdc_s9), sum(PPH$cdc_s10),sum(PPH$cdc_s11), sum(PPH$cdc_s12),sum(PPH$cdc_s13), sum(PPH$cdc_s14),sum(PPH$cdc_s15), sum(PPH$cdc_s16),sum(PPH$cdc_s17), sum(PPH$cdc_s18),sum(PPH$cdc_s19), 
+sum(PPH$cdc_s20),sum(PPH$cdc_s21))
+
+cdc_severe_labels <- sprintf("cdc_s%d",seq(1:21))
+
+cdc_smm <- as.data.frame(cdc_severe_count,cdc_severe_labels) %>% arrange(desc(cdc_severe_count)) %>% mutate(cdc_severe_rate = cdc_severe_count/21501) %>% head(6)
+cdc_smm$name <- c("Transfusion", "Disseminated\nintravascular coagulation","Hysterectomy", "Sickle cell\ndisease with crisis","Acute renal\nfailure","Adult respiratory\ndistress syndrome")
+
+
+ggplot(cdc_smm, aes(x = reorder(name, cdc_severe_rate) , y = cdc_severe_rate)) +
+  geom_bar(stat = "identity", width= 0.5, fill = "#21aca9") +
+  coord_flip()+
+  xlab("SMM Indicators") + 
+  ylab("Percentage of single SMM indicators") + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
+  theme_minimal()
+```
+
+Among the SMM patients, the most frequent CDC dx/pr are 17. Transfusion, 8. Disseminated intravascular coagulation (DIC), 19.  Hysterectomy, 15.Sickle cell disease with crisis
+
+### drafts below
 ```{r}
 
 race_percentage_plot <- ggplot(PPH, aes(race)) + 
@@ -125,10 +380,4 @@ c <- cbind(a, b$total) %>% mutate(percentage = s/b$total)
 ### Figure 3. The risk for morbidity based on the median income of patients’ zipcode.
 
 
-```{r}
-x <- tibble(a = c("White", "Black", "Asian"), b = c(45, 21, 10))
-x
 
-x %>$
-
-```
