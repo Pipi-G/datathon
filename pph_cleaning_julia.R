@@ -69,6 +69,7 @@ PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019)
 
 # write_csv(PPH, "PPH_raw.csv")
 
+
 ### Create variables for Severe Maternal Morbidity (CDC) ------------------------------------------------------------------------------------------------------------------------------------------
 # The new variables are labeled cdc_s1-cdc_s21
 
