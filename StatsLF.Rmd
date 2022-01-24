@@ -1,0 +1,258 @@
+---
+title: "StatsLF"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(readr)
+```
+
+```{r}
+PPH <- read_csv("PPH_newcols.csv")
+```
+Create a table and later insert the calculated percentages
+PPH_newcols has 117583 rows and 125 cols
+
+1) Race
+1 = white, 2 = black, 3 = hispanic, 4 = A/PI, 5 = native american, 6 = other, . = missing, .A = invalid, .B = unavailable
+```{r}
+PPH$sever_morbidity <- ifelse(!!rowSums(PPH[126:146]),1,0)
+```
+
+```{r}
+sever <- PPH %>% filter(sever_morbidity == 1)
+a <- sever %>% group_by(race) %>% summarise(s = n())
+b <- PPH %>% group_by(race) %>% summarise(total = n())
+race_smm <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits=3)*100)
+words <- c("White", "Black", "Hispanic","A/PI","Native American", "Other","Missing")
+race_smm <- cbind(race_smm, words)
+view(race_smm)
+
+race_smm$p <- rep(c(0), each=7)
+for (i in 2:7)
+{
+  p <- prop.test(x=c(race_smm$s[i],race_smm$"b$total"[i]),n=c(race_smm$s[1],race_smm$"b$total"[1]))$p.value
+  race_smm$p[i] <- p
+}
+```
+
+```{r}
+p_black_smm <- prop.test(x=c(8881, 3823), n=c(53724, 17000), alternative="two.sided")
+p_apia_smm <- prop.test(x=c(8881, 1737), n=c(53724, 9081), alternative="two.sided")
+
+race_smm$ref1 <- rep(c(8881), each=7)
+race_smm$ref2 <- rep(c(53724), each=7)
+
+```
+A) Is sample size large enough? naq, nap, nbq, nbp >=5. Yes nap =~ 9000
+```{r}
+nap <- 53724*.165
+```
+
+```{r}
+dic <- PPH %>% filter(cdc_s8 == 1)
+a <- dic %>% group_by(race) %>% summarise(s = n())
+b <- PPH %>% group_by(race) %>% summarise (total = n())
+race_dic <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+words <- c("White", "Black", "Hispanic","A/PI","Native American", "Other","Missing")
+race_dic <- cbind(race_dic, words)
+
+race_dic$p <- rep(c(0), each=7)
+for (i in 2:7)
+{
+  p <- prop.test(x=c(race_dic$s[i],race_dic$"b$total"[i]),n=c(race_dic$s[1],race_dic$"b$total"[1]))$p.value
+  race_dic$p[i] <- p
+}
+
+view(race_dic)
+```
+
+```{r}
+tfn <- PPH %>% filter(cdc_s18 == 1)
+a <- tfn %>% group_by(race) %>% summarise(s = n())
+b <- PPH %>% group_by(race) %>% summarise (total = n())
+race_tfn <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+words <- c("White", "Black", "Hispanic","A/PI","Native American", "Other","Missing")
+race_tfn <- cbind(race_tfn, words)
+
+race_tfn$p <- rep(c(0), each=7)
+for (i in 2:7)
+{
+  p <- prop.test(x=c(race_tfn$s[i],race_tfn$"b$total"[i]),n=c(race_tfn$s[1],race_tfn$"b$total"[1]))$p.value
+  race_tfn$p[i] <- p
+}
+view(race_tfn)
+```
+
+```{r}
+hyst <- PPH %>% filter(cdc_s19 == 1)
+a <- hyst %>% group_by(race) %>% summarise(s = n())
+b <- PPH %>% group_by(race) %>% summarise (total = n())
+race_hyst <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+words <- c("White", "Black", "Hispanic","A/PI","Native American", "Other","Missing")
+race_hyst <- cbind(race_hyst, words)
+
+race_hyst$p <- rep(c(0), each=7)
+for (i in 2:7)
+{
+  p <- prop.test(x=c(race_hyst$s[i],race_hyst$"b$total"[i]),n=c(race_hyst$s[1],race_hyst$"b$total"[1]))$p.value
+  race_hyst$p[i] <- p
+}
+view(race_hyst)
+```
+2) Zip income quartile
+1=0-25th %, 2= 26-50, 3= 51-75, 4= 76-100, . = other
+```{r}
+sever <- PPH %>% filter(sever_morbidity == 1)
+a <- sever %>% group_by(zipinc_qrtl) %>% summarise(s = n())
+b <- PPH %>% group_by(zipinc_qrtl) %>% summarise(total = n())
+ziq_smm <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits=3)*100)
+
+words <- c("0-25","26-50","51-75","76-100","Other")
+ziq_smm <- cbind(ziq_smm, words)
+
+ziq_smm$p <- rep(c(0), each=5)
+for (i in 2:5)
+{
+  p <- prop.test(x=c(ziq_smm$s[i],ziq_smm$"b$total"[i]),n=c(ziq_smm$s[1],ziq_smm$"b$total"[1]))$p.value
+  ziq_smm$p[i] <- p
+}
+view(ziq_smm)
+```
+
+```{r}
+dic <- PPH %>% filter(cdc_s8 == 1)
+a <- dic %>% group_by(zipinc_qrtl) %>% summarise(s = n())
+b <- PPH %>% group_by(zipinc_qrtl) %>% summarise (total = n())
+ziq_dic <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+
+words <- c("0-25","26-50","51-75","76-100","Other")
+ziq_dic <- cbind(ziq_dic, words)
+
+ziq_dic$p <- rep(c(0), each=5)
+for (i in 2:5)
+{
+  p <- prop.test(x=c(ziq_dic$s[i],ziq_dic$"b$total"[i]),n=c(ziq_dic$s[1],ziq_dic$"b$total"[1]))$p.value
+  ziq_dic$p[i] <- p
+}
+view(ziq_dic)
+```
+
+```{r}
+tfn <- PPH %>% filter(cdc_s18 == 1)
+a <- tfn %>% group_by(zipinc_qrtl) %>% summarise(s = n())
+b <- PPH %>% group_by(zipinc_qrtl) %>% summarise (total = n())
+ziq_tfn <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+
+words <- c("0-25","26-50","51-75","76-100","Other")
+ziq_tfn <- cbind(ziq_tfn, words)
+
+ziq_tfn$p <- rep(c(0), each=5)
+for (i in 2:5)
+{
+  p <- prop.test(x=c(ziq_tfn$s[i],ziq_tfn$"b$total"[i]),n=c(ziq_tfn$s[1],ziq_tfn$"b$total"[1]))$p.value
+  ziq_tfn$p[i] <- p
+}
+view(ziq_tfn)
+```
+
+```{r}
+hyst <- PPH %>% filter(cdc_s19 == 1)
+a <- hyst %>% group_by(zipinc_qrtl) %>% summarise(s = n())
+b <- PPH %>% group_by(zipinc_qrtl) %>% summarise (total = n())
+ziq_hyst <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+
+words <- c("0-25","26-50","51-75","76-100","Other")
+ziq_hyst <- cbind(ziq_hyst, words)
+
+ziq_hyst$p <- rep(c(0), each=5)
+for (i in 2:5)
+{
+  p <- prop.test(x=c(ziq_hyst$s[i],ziq_hyst$"b$total"[i]),n=c(ziq_hyst$s[1],ziq_hyst$"b$total"[1]))$p.value
+  ziq_hyst$p[i] <- p
+}
+view(ziq_hyst)
+```
+3) Payer
+1=Medicare,2=Medicaid,3=private insurance, 4=self-pay, 5=no charge, 6=other, ./.Z/.B=missing/invalid/unavailable
+```{r}
+sever <- PPH %>% filter(sever_morbidity == 1)
+a <- sever %>% group_by(pay1) %>% summarise(s = n())
+b <- PPH %>% group_by(pay1) %>% summarise(total = n())
+pay1_smm <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits=3)*100)
+
+words <- c("Medicare","Medicaid","Private","Self-pay","No charge", "Other","unavailable")
+pay1_smm <- cbind(pay1_smm, words)
+
+pay1_smm$p <- rep(c(0), each=7)
+for (i in 1:7)
+{
+#  if (i != 3){
+    p <- prop.test(x=c(pay1_smm$s[i],pay1_smm$"b$total"[i]),n=c(pay1_smm$s[3],pay1_smm$"b$total"[3]))$p.value
+    pay1_smm$p[i] <- p
+#  }
+}
+view(pay1_smm)
+```
+
+```{r}
+dic <- PPH %>% filter(cdc_s8 == 1)
+a <- dic %>% group_by(pay1) %>% summarise(s = n())
+b <- PPH %>% group_by(pay1) %>% summarise (total = n())
+pay1_dic <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+
+words <- c("Medicare","Medicaid","Private","Self-pay","No charge", "Other","unavailable")
+pay1_dic <- cbind(pay1_dic, words)
+
+pay1_dic$p <- rep(c(0), each=7)
+for (i in 1:7)
+{
+  if (i != 3){
+    p <- prop.test(x=c(pay1_dic$s[i],pay1_dic$"b$total"[i]),n=c(pay1_dic$s[3],pay1_dic$"b$total"[3]))$p.value
+    pay1_dic$p[i] <- p
+  }
+}
+view(pay1_dic)
+```
+
+```{r}
+tfn <- PPH %>% filter(cdc_s18 == 1)
+a <- tfn %>% group_by(pay1) %>% summarise(s = n())
+b <- PPH %>% group_by(pay1) %>% summarise (total = n())
+pay1_tfn <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+
+words <- c("Medicare","Medicaid","Private","Self-pay","No charge", "Other","unavailable")
+pay1_htfn <- cbind(pay1_tfn, words)
+
+pay1_tfn$p <- rep(c(0), each=7)
+
+for (i in 1:7)
+{
+  if (i != 3){
+    p <- prop.test(x=c(pay1_tfn$s[i],pay1_tfn$"b$total"[i]),n=c(pay1_tfn$s[3],pay1_tfn$"b$total"[3]))$p.value
+    pay1_tfn$p[i] <- p
+  }
+}
+view(pay1_tfn)
+```
+
+```{r}
+hyst <- PPH %>% filter(cdc_s19 == 1)
+a <- hyst %>% group_by(pay1) %>% summarise(s = n())
+b <- PPH %>% group_by(pay1) %>% summarise (total = n())
+pay1_hyst <- cbind(a, b$total) %>% mutate(percentage = round(s/b$total, digits = 3)*100)
+
+words <- c("Medicare","Medicaid","Private","Self-pay","No charge", "Other","unavailable")
+pay1_hyst <- cbind(pay1_hyst, words)
+
+pay1_hyst$p <- rep(c(0), each=7)
+
+for (i in 1:7)
+{
+  if (i != 3){
+    p <- prop.test(x=c(pay1_hyst$s[i],pay1_hyst$"b$total"[i]),n=c(pay1_hyst$s[3],pay1_hyst$"b$total"[3]))$p.value
+    pay1_hyst$p[i] <- p
+  }
+}
+view(pay1_hyst)
+```
