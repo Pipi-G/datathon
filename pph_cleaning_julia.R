@@ -7,21 +7,25 @@ NIS_2016_Core <- read_csv("NIS_2016_Core.csv") %>%
   mutate(key = round(key_nis))
 NIS_2016_Severity <- read_csv("NIS_2016_Severity.csv") %>%
   mutate(key = round(key_nis))
+NIS_2016_Hospital <- read_csv("NIS_2016_Hospital.csv") 
 
 NIS_2017_Core <- read_csv("NIS_2017_Core.csv") %>%
   mutate(key = round(key_nis))
 NIS_2017_Severity <- read_csv("NIS_2017_Severity.csv") %>%
   mutate(key = round(key_nis))
+NIS_2017_Hospital <- read_csv("NIS_2017_Hospital.csv") 
 
 NIS_2018_Core <- read_csv("NIS_2018_Core.csv") %>%
   mutate(key = round(key_nis))
 NIS_2018_Severity <- read_csv("NIS_2018_Severity.csv") %>%
   mutate(key = round(key_nis))
+NIS_2018_Hospital <- read_csv("NIS_2018_Hospital.csv") 
 
 NIS_2019_Core <- read_csv("NIS_2019_Core.csv") %>%
   mutate(key = round(key_nis))
 NIS_2019_Severity <- read_csv("NIS_2019_Severity.csv") %>%
   mutate(key = round(key_nis))
+NIS_2019_Hospital <- read_csv("NIS_2019_Hospital.csv")
 
 
 
@@ -52,20 +56,34 @@ PPH_2016 <- left_join(PPH_Core_2016, NIS_2016_Severity, by = "key") %>%
   add_column("i10_dx31" = NA,"i10_dx32" = NA,"i10_dx33" = NA,"i10_dx34"= NA, "i10_dx35"= NA,"i10_dx36"= NA,"i10_dx37"= NA, "i10_dx38"= NA,"i10_dx39"= NA,"i10_dx40"= NA, .after = "i10_dx30") %>%
   add_column("i10_pr16" = NA, "i10_pr17" = NA,"i10_pr18" = NA,"i10_pr19"= NA,"i10_pr20"= NA,"i10_pr21"= NA,"i10_pr22"= NA,"i10_pr23"= NA, "i10_pr24"= NA,"i10_pr25"= NA, .after = "i10_pr15") %>%
   add_column("prday16"= NA , "prday17"= NA,  "prday18"= NA , "prday19" = NA,
-             "prday20" = NA,"prday21"= NA, "prday22"= NA,"prday23"= NA, "prday24"= NA, "prday25"= NA, .after = "prday15")
-#the variables that 2016 has but no longer exists for later years："dxver""i10_ecause1" "i10_ecause2" "i10_ecause3" "i10_ecause4" "i10_necause" "prver"， remove them for now
+             "prday20" = NA,"prday21"= NA, "prday22"= NA,"prday23"= NA, "prday24"= NA, "prday25"= NA, .after = "prday15") %>%
+  # the variables that 2016 has but no longer exists for later years："dxver""i10_ecause1" "i10_ecause2" "i10_ecause3" "i10_ecause4" "i10_necause" "prver"， remove them for now
+  rename(hosp_nis = hosp_nis.x) %>%
+  left_join(NIS_2016_Hospital, by = c("hosp_nis", "year")) 
 
-PPH_2017 <- left_join(PPH_Core_2017, NIS_2017_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y","dxver","prver")) #the dxver and prver in 2017 are all 10,no these two columns in years after
+PPH_2017 <- left_join(PPH_Core_2017, NIS_2017_Severity, by = "key") %>% 
+  select(-c("key_nis.x","hosp_nis.y","dxver","prver")) %>% #the dxver and prver in 2017 are all 10,no these two columns in years after
+  rename(hosp_nis = hosp_nis.x)  %>%
+  left_join(NIS_2017_Hospital, by = c("hosp_nis", "year"))
 
-PPH_2018 <- left_join(PPH_Core_2018, NIS_2018_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y"))
+PPH_2018 <- left_join(PPH_Core_2018, NIS_2018_Severity, by = "key") %>% 
+  select(-c("key_nis.x","hosp_nis.y")) %>%
+  rename(hosp_nis = hosp_nis.x) %>%
+  left_join(NIS_2018_Hospital, by = c("hosp_nis", "year"))
 
-PPH_2019 <- left_join(PPH_Core_2019, NIS_2019_Severity, by = "key") %>% select(-c("key_nis.x","hosp_nis.y")) %>% 
-  select(-c("i10_birth", "i10_delivery", "i10_injury",    "i10_multinjury" , "i10_serviceline" ,"pclass_orproc")) #there are 6 new variables in 2019 "i10_birth", "i10_delivery", "i10_injury"     "i10_multinjury" , "i10_serviceline" ,"pclass_orproc", drop them for now
+PPH_2019 <- left_join(PPH_Core_2019, NIS_2019_Severity, by = "key") %>% 
+  select(-c("key_nis.x","hosp_nis.y")) %>% 
+  select(-c("i10_birth", "i10_delivery", "i10_injury",    "i10_multinjury" , "i10_serviceline" ,"pclass_orproc")) %>% 
+  #there are 6 new variables in 2019 "i10_birth", "i10_delivery", "i10_injury"     "i10_multinjury" , "i10_serviceline" ,"pclass_orproc", drop them for now
+  rename(hosp_nis = hosp_nis.x) %>%
+  left_join(NIS_2019_Hospital, by = c("hosp_nis", "year"))
 
 
 
 ### Join all years -----------------------------------------------------------------------------------------------------------------------------------------
-PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019)
+PPH <- rbind(PPH_2016, PPH_2017, PPH_2018, PPH_2019) # %>%
+  # select(!c(age_neonate, amonth, aweekend, dispuniform, dqtr, drg, drgver, drg_nopoa, elective, female, hcup_ed,
+         # los, mdc, mdc_nopoa, nis_stratum, totchg, tran_in, tran_out, aprdrg_risk_mortality))
 
 # write_csv(PPH, "PPH_raw.csv")
 
@@ -142,7 +160,7 @@ PPH$cdc_s21 <- ifelse(!!rowSums(sapply(PPH[59:83], grepl, pattern = "^5A1935Z$|^
 
 # Turn into composite binary
 PPH <- PPH %>% 
-  mutate(SMM = as.factor(ifelse(!!rowSums(PPH[126:146]), 1, 0)))
+  mutate(SMM = as.factor(ifelse(!!rowSums(PPH[138:158]), 1, 0)))
 
 
 
